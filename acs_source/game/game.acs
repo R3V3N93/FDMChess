@@ -1,0 +1,69 @@
+strict namespace CHESS{
+
+enum : int
+{
+    TEAM_WHITE = 0,
+	TEAM_BLACK = 1	
+};
+
+enum GAMESTATE : int
+{
+    GAMESTATE_WAITING,
+    GAMESTATE_PICKCLASS,
+    GAMESTATE_OPENING,
+    GAMESTATE_MIDDLEGAME,
+    GAMESTATE_ENDGAME,
+    GAMESTATE_CHECKMATE
+};
+
+int gameState = GAMESTATE_WAITING;
+
+void SetGameState(int state)
+{
+    if(state < 0 || state > GAMESTATE_CHECKMATE)
+    {
+        LogWarning(__FUNCTION__ + " : cannot set state to " + str(state) + "! valid states are " + str(GAMESTATE_WAITING) + "~" + str(GAMESTATE_CHECKMATE));
+        return;
+    }
+    LogDebug(__FUNCTION__ + " : set state to " + str(state));
+    gameState = state;
+    return;
+}
+
+struct gameT
+{
+    int score[2];
+    int classCount[2][7];
+    int classCountMax[7];
+};
+
+gameT game = {{0, 0}, {{0,0,0,0,0,0,0}, {0,0,0,0,0,0,0}}, {0,16,4,4,4,2,2}};
+
+int GetScore(int team)
+{
+    return game.score[team];
+}
+
+void CountOneClass(int team, int classnum)
+{
+    game.classCount[team][classnum]++;
+    CHESS::MAP::SetSelectionValue(team, classnum, 0, game.classCount[team][classnum]);
+    return;
+}
+
+bool CheckClassFull(int team, int classnum)
+{
+    return game.classCount[team][classnum] >= game.classCountMax[classnum];
+}
+
+int GetRemainingClass()
+{
+    for(int i = 0; i < 6; i++)
+    {
+        if(!CheckClassFull(players[PlayerNumber()].team, i+1))
+            return i+1;
+    }
+    return -1;
+}
+
+}

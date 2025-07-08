@@ -1,0 +1,136 @@
+strict namespace CHESS{
+strict namespace CLASS{
+
+enum CLASS_CONSTS : int
+{
+    CONST_PAWN_PROMOTION_POINT = 18,
+    CONST_KING_POINT = -1,
+
+    CLASS_EMPTY = 0,
+    CLASS_PAWN = 1,
+    CLASS_KNIGHT = 2,
+    CLASS_BISHOP = 3,
+    CLASS_ROOK = 4,
+    CLASS_QUEEN = 5,
+    CLASS_KING = 6
+};
+
+enum CLASS_DESCRIPTION : str
+{
+    DESCRIPTION_PAWN = "
+    Starts with \ckBasic Weapons\c-\n
+    You can be promoted to \ckQueen\c- by scoring \ck18 points!\c-",
+    DESCRIPTION_KNIGHT = "
+    Starts with \cka Shotgun\c-\n
+    You can \ckJump\c- to cross \ckHoles and High Positions!\c-",
+    DESCRIPTION_BISHOP = "
+    Starts with \cka Sniper rifle\c-\n
+    You can \ckBecome Invisible for Short Amount of Time\c- by \ckPressing Reload Button\c-",
+    DESCRIPTION_ROOK = "
+    Starts with \ckVergil's Yamato\c-\n
+    You got \ckHigh Speed\c-!",
+    DESCRIPTION_QUEEN = "
+    Starts with \ckan Assault Rifle\c-\n
+    You are the \ckMost Powerful Being Here\c-",
+    DESCRIPTION_KING = "
+    \ckGUN GAME MODE!\c-\n
+    \ckYour score gets expensive kill by kill!\c-"
+};
+
+struct ClassT
+{
+    int health;
+    fixed speed;
+    // if CONST_KING_POINT(-1), it gets its own point modifier
+    int point;
+    // if this is 'GUNGAME'(king's selection), this class gets gungame option
+    bool canJump;
+};
+
+ClassT class[7] = 
+{
+{-1, -1.0, -1, false},
+{100, 1.0, 1, false},
+{150, 1.0, 3, true},
+{150, 1.0, 2, false},
+{175, 2.0, 4, false},
+{250, 1.0, 5, false},
+{125, 1.0, CONST_KING_POINT, false}
+};
+
+struct ClassStringT
+{
+    str name;
+    str startWeapon;
+    str description;
+};
+
+// TODO : integrate this with ClassT once TDRR fixes the shit
+ClassStringT classString[7] = 
+{
+{"EMPTY", "EMPTY", "WHY ARE YOU HERE"},
+{"Pawn", "KUROJI_Sci_Pistol", DESCRIPTION_PAWN},
+{"Knight", "SpasShotgun12", DESCRIPTION_KNIGHT},
+{"Bishop", "CS16_AWP", DESCRIPTION_BISHOP},
+{"Rook", "Yamato", DESCRIPTION_ROOK},
+{"Queen", "KUROJI_Sci_Chaingun", DESCRIPTION_QUEEN},
+{"King"/*gg*/, "GUNGAME", DESCRIPTION_KING},
+};
+
+
+
+int GetKingPoint(int pnum)
+{
+    if(players[pnum].class != CHESS::CLASS::CLASS_KING)
+        return -1;
+
+    if(players[pnum].score <= 5)
+        return players[pnum].score;
+    else
+        return 5;
+
+    return 1;
+}
+
+// UT_Enforcer????? BALPHAGORE's WORST ENEMY IN HIS LIFE EVER?????
+str gungame[15] = {"UT_Enforcer", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+
+
+bool BecomeClass(int classnum, bool showDesc = false)
+{
+    //if(checkClassFull(classnum))
+    //{
+    //    LogWarning(__FUNCTION__ + " : Class \ck" + classString[classnum].name + "\c- is full!");
+    //    return false;
+    //}
+
+    if(showDesc)
+    {
+        SetFont("BIGFONT");
+        SetHUDSize(640, 480, false);
+        HudMessage(s:("You are "+classString[classnum].name + "!\n\n" + classString[classnum].description +(classnum != CLASS::CLASS_KING ? "\n\nYou are " + str(class[classnum].point) + " scores worth" : ""));HUDMSG_FADEOUT, 2, CR_UNTRANSLATED, 320.4, 240.0, 1.0, 1.0);
+    }
+    BCSUTILS::SetActorSpawnHealth(players[PlayerNumber()].tid, class[classnum].health);
+    BCSUTILS::SetActorHealth(players[PlayerNumber()].tid, class[classnum].health);
+    BCSUTILS::SetActorSpeed(players[PlayerNumber()].tid, class[classnum].speed);
+    ClearActorInventory(players[PlayerNumber()].tid);
+
+    players[PlayerNumber()].class = classnum;
+
+    // Lets the game know one more of this class occupied
+    // countOneClass(class); // This line should go elsewhere.
+
+    if(classString[classnum].startWeapon != "GUNGAME")
+        GiveActorInventory(players[PlayerNumber()].tid, classString[classnum].startWeapon, 1);
+    else
+        GiveActorInventory(players[PlayerNumber()].tid, gungame[players[PlayerNumber()].score], 1);
+
+    SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
+
+    LogDebug(__FUNCTION__ + " : set player " + str(PlayerNumber()) + "'s class as " + classString[classnum].name + "\nInformation:\n  health : " + str(class[classnum].health) + "\n  speed : " + str(class[classnum].speed) + "\n  point : " + str(class[classnum].point) + "\n  startWeapon : " + classString[classnum].startWeapon + "\n  canJump : " + str(class[classnum].canJump));
+
+    return true;
+}
+
+}
+}

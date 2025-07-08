@@ -1,0 +1,128 @@
+    strict namespace {
+
+enum : int
+{
+    CONST_TID = 99900
+};
+
+struct PlayerT
+{
+    int class;
+    int score;
+    int team;
+    int tid;
+    bool ingame;
+    bool mouse;
+};
+
+PlayerT players[BCSUTILS::MAX_PLAYERS];
+
+Script "ChessFrag" (int type, int arg1, int arg2) EVENT
+{
+    if(type == GAMEEVENT_PLAYERFRAGS)
+    {
+        int killerNumber = PlayerNumber();
+        int victimNumber = arg1;
+
+        int victimPoint = CHESS::CLASS::class[players[victimNumber].class].point;
+
+        if(players[killerNumber].class == CHESS::CLASS::CLASS_KING)
+        {
+            players[killerNumber].score += 1;
+            CHESS::game.score[players[killerNumber].team] += victimPoint;
+            ClearActorInventory(players[PlayerNumber()].tid);
+            if(players[killerNumber].score <= 14)
+                GiveActorInventory(GetPlayerTid(killerNumber), CHESS::CLASS::gungame[players[killerNumber].score], 1);
+
+        }
+        else
+        {
+            if(victimPoint == CHESS::CLASS::CONST_KING_POINT)
+            {
+                players[killerNumber].score += CHESS::CLASS::GetKingPoint(victimNumber);
+                CHESS::game.score[players[killerNumber].team] += CHESS::CLASS::GetKingPoint(victimNumber);
+            }
+            else
+            {
+                players[killerNumber].score += victimPoint;
+                CHESS::game.score[players[killerNumber].team] += victimPoint;
+            }
+        }
+
+        
+        
+    }
+}
+
+script "ChessRespawn" RESPAWN
+{
+    Thing_ChangeTID(0, players[PlayerNumber()].tid);
+    CHESS::CLASS::becomeClass(players[playernumber()].class);
+    CHESS::MAP::TeleportToChessBoard();
+    CHESS::MAP::ThrustThisNigFromChessBoard(PlayerNumber());
+}
+
+function bool IsBlack()
+{
+	return (PlayerTeam() == 3 || PlayerTeam() == 1);
+}
+
+fixed mod(fixed a, fixed b)
+{
+	while (a > 0.0)
+    {
+        a -= b;
+    }
+
+    return a += b; // replacement for % for now
+}
+
+
+int GetPlayerTid(int pnum)
+{
+    return pnum + CONST_TID;
+}
+
+script "Enter" ENTER
+{
+    ClearInventory();
+    players[PlayerNumber()].ingame = true;
+    players[PlayerNumber()].tid = GetPlayerTid(PlayerNumber());
+    Thing_ChangeTID(0, players[PlayerNumber()].tid);
+
+    if(IsBlack())
+    {
+        players[PlayerNumber()].team = CHESS::TEAM_BLACK;
+        Player_SetTeam(1, true);
+    }
+    else
+    {
+        players[PlayerNumber()].team = CHESS::TEAM_WHITE;
+        Player_SetTeam(0, true);
+    }
+
+    while(1)
+    {
+        switch(players[PlayerNumber()].class)
+        {
+            case CHESS::CLASS::CLASS_PAWN:
+                PawnSpecial();
+        }
+        delay(1);
+    }
+}
+
+script "Disconnect" (int pnum) DISCONNECT
+{
+    players[pnum].ingame = false;
+}
+
+script "Death" DEATH
+{
+    BCSUTILS::SetActorAlpha(ActivatorTid(), 0.0);
+    PlaySound(ActivatorTid(), "chess_capture", CHAN_AUTO);
+    Thing_ChangeTID(0, 0);
+    
+}
+
+}

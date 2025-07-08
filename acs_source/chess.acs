@@ -1,0 +1,139 @@
+#nocompact
+#pragma raw include on
+#library "chess"
+#import "zcommon.bcs"
+
+#include "lib/bcsutils.acs"
+#import "lib/log.g.acs"
+
+#include "game/class/pawn.acs"
+
+#include "game/game.acs"
+#include "game/class.acs"
+#include "game/player.acs"
+#include "game/map.acs"
+
+strict namespace {
+
+enum : int
+{
+	EVAL_BAR_HEIGHT = 1216,
+	EVAL_BAR_FLOOR = 439,
+};
+
+enum : fixed
+{
+    WHITE_SPAWN_PIVOT_X = -512.0,
+    WHITE_SPAWN_PIVOT_Y = 640.0,
+    BLACK_SPAWN_PIVOT_X = -512.0,
+    BLACK_SPAWN_PIVOT_Y = 1152.0
+};
+
+script "main" OPEN
+{
+    SetMusic("CHESSTB");
+    SetMusicVolume(0.1);
+
+    If (GetCurrentGameMode() != "TEAMGAME")
+	{
+	    SetCurrentGameMode("TEAMGAME");
+	}
+
+    for(int i = 0; i < 2; i++)
+    {
+        for(int j = 1; j <= 6; j++)
+        {
+            CHESS::MAP::SetSelectionValue(i, j, 1, CHESS::game.classCountMax[j]);
+        }
+    }
+
+    // Sets up the chessboard camera.
+	SetActorPitch(1, 0.25);
+	SetCameraToTexture(1, "ZTRIGGER", 90);
+    // This for selection screen.
+    SetActorPitch(2, 0.25);
+
+    CHESS::setGameState(CHESS::GAMESTATE_PICKCLASS);
+
+    for(int i = CHESS::MAP::CONST_PICK_CLASS_TIME; i >= 1; i--)
+    {
+        SetFont("BIGFONT");
+        SetHUDSize(320, 240, false);
+        HudmessageBold(s:"Pick your class! \ngame starts in " + str(i) + " seconds!"; HUDMSG_PLAIN, 1, CR_UNTRANSLATED, 160.4, 192.0, 0.0);
+        delay(35);
+    }
+
+    LogDebug(__SCRIPT__ + " : Starting the game thrusting players from board and giving losers remainders");
+
+    for(int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
+    {
+        if(players[i].ingame)
+        {
+            SetActivatorToPlayer(i);
+            if(players[i].class == CHESS::CLASS::CLASS_EMPTY)
+            {  
+                CHESS::CLASS::becomeClass(CHESS::GetRemainingClass());
+                CHESS::MAP::TeleportToChessBoard();
+            }
+            CHESS::MAP::ThrustThisNigFromChessBoard(i);
+            SetPlayerProperty(0, 0, PROP_FROZEN);
+        }
+    }
+
+    SetMusic("DMCCHESS");
+    SetMusicVolume(0.3);
+
+    BCSUtils::ClearHudMessageBold(1);
+
+    SetActivatorToPlayer(-1);
+    LogDebug(__SCRIPT__ + " : Done!");
+    CHESS::SetGameState(CHESS::GAMESTATE_OPENING);
+
+    while(1) 
+    {
+        /////////////////////////////////////
+        // Evaluation bar
+        /////////////////////////////////////
+        fixed evalBarRatio = fixed(CHESS::game.score[CHESS::TEAM_WHITE] + 1) / fixed(CHESS::game.score[0] + CHESS::game.score[1] + 2);
+        int evalBarHeight = int(evalBarRatio * fixed(EVAL_BAR_HEIGHT)) + EVAL_BAR_FLOOR;
+        //log(d:evalBarHeight);
+        Floor_MoveToValue(10000, 128, evalBarHeight, 0);
+
+        /////////////////////////////////////
+        // Score indicator
+        /////////////////////////////////////
+        void scoreIndicator(int team)  // Nested function is really cool!
+        {
+            int score = CHESS::getScore(team);
+
+            int digit3 = score / 100;
+            int digit2 = (score - digit3 * 100) / 10;
+            int digit1 = score - digit3 * 100 - digit2 * 10;
+            // Line tag 456 are black, and 123 are for white
+            // and yeah... CHESS::TEAM_BLACK is 1
+            // This is going to be crazy to interpret without these comments
+            SetLineTexture(1 + team * 3, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"CALNUM", d:digit3));
+            SetLineTexture(2 + team * 3, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"CALNUM", d:digit2));
+            SetLineTexture(3 + team * 3, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"CALNUM", d:digit1));
+        }
+
+        scoreIndicator(CHESS::TEAM_WHITE);
+        scoreIndicator(CHESS::TEAM_BLACK);
+
+        if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::MAP::CONST_FRAG_POINT_LIMIT || CHESS::getScore(CHESS::TEAM_BLACK) > CHESS::MAP::CONST_FRAG_POINT_LIMIT)
+            break;
+        delay(1);
+    }
+    CHESS::SetGameState(CHESS::GAMESTATE_CHECKMATE);
+    int winner = 123;
+    if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::MAP::CONST_FRAG_POINT_LIMIT)
+        winner = CHESS::TEAM_WHITE;
+    else
+        winner = CHESS::TEAM_BLACk;
+    LogDebug("Team " + str(winner) + " Won");
+
+    Delay(35 * 5);
+    ACS_NamedExecute("NextRound_Map",0);
+}
+
+} // strict namespace {}

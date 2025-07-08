@@ -1,0 +1,10 @@
+strict namespace {
+void PawnSpecial()
+{
+    if(players[PlayerNumber()].score >= CHESS::CLASS::CONST_PAWN_PROMOTION_POINT && players[PlayerNumber()].class != CHESS::CLASS::CLASS_QUEEN)
+    {
+        CHESS::CLASS::BecomeClass(CHESS::CLASS::CLASS_QUEEN, true);
+    }
+}
+
+}

@@ -1,0 +1,6 @@
+log/*
+*.backup*
+*.autosave*
+.vscode/*
+*.bak
+*.dbs

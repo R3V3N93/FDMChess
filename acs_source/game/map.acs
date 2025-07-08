@@ -1,0 +1,94 @@
+strict namespace CHESS {
+strict namespace MAP {
+
+enum : int
+{
+    CONST_PICK_CLASS_TIME = 15,
+    CONST_FRAG_POINT_LIMIT = 250,
+
+    MAPSPOT_TID_BLACK = 20000,
+    MAPSPOT_TID_WHITE = 10000,
+    MAPSPOT_TID_PAWN = 0,
+    MAPSPOT_TID_ROOK = 16,
+    MAPSPOT_TID_KNIGHT = 20,
+    MAPSPOT_TID_BISHOP = 24,
+    MAPSPOT_TID_QUEEN = 28,
+    MAPSPOT_TID_KING = 30
+};
+
+int mapSpotTID[6] = {0, 20, 24, 16, 28, 30};
+
+// 0000
+// team white0 black1
+// class 1~6
+// value cur0 max1
+// digit 1~2
+void SetSelectionValue(int team, int class, int curmax, int value)
+{
+    // casting hell.
+    // I don't like this. make me nervous with this method.
+    int id = BCSUTILS::atoi(str(team) + str(class) + str(curmax));
+    int firstDigit = value / 10;
+    int secondDigit = value % 10;
+    SetLineTexture(id * 10 + 1, LINE_FRONT, TEXTURE_MIDDLE, "CALNUM" + str(firstDigit));
+    SetLineTexture(id * 10 + 2, LINE_FRONT, TEXTURE_MIDDLE, "CALNUM" + str(secondDigit));
+}
+
+void thrustThisNigFromChessBoard(int pnum)
+{
+    PlaySound(ActivatorTid(), "chess_move", CHAN_AUTO);
+    fixed playerpos[2] = {GetActorX(players[pnum].tid), GetActorY(players[pnum].tid)};
+    fixed pivotpos[2] = {0.0, 0.0};
+    switch(players[pnum].team)
+    {
+        case CHESS::TEAM_WHITE:
+            pivotpos[0] = WHITE_SPAWN_PIVOT_X;
+            pivotpos[1] = WHITE_SPAWN_PIVOT_Y;
+            break;
+        case CHESS::TEAM_BLACK:
+            pivotpos[0] = BLACK_SPAWN_PIVOT_X;
+            pivotpos[1] = BLACK_SPAWN_PIVOT_Y;
+            break;
+    }
+    ThrustThingZ(players[pnum].tid, 120, 0, 0);
+    ThrustThing(int(VectorAngle(playerpos[0] - pivotpos[0], playerpos[1] - pivotpos[1]) * 256.0), 30, 1, players[pnum].tid);
+    LogDebug(__FUNCTION__ + " : thrusted Player " + str(pnum) + " to chess board!");
+}
+
+void teleportToChessBoard()
+{
+    int c = players[PlayerNumber()].class;
+    int teamTID = (players[PlayerNumber()].team == CHESS::TEAM_WHITE ? MAPSPOT_TID_WHITE : MAPSPOT_TID_BLACK);
+
+    int maxNum = CHESS::game.classCountMax[c];
+    int tid = mapSpotTID[c-1];
+
+    for(int i = 0; i < maxNum; i++)
+    {
+        //log(d:teamTID + tid + i);
+        if(Warp(teamTID + tid + i, 0.0, 0.0, 0.0, 0.0, 0))
+            break;
+    }
+
+    
+
+    LogDebug(__FUNCTION__ + " : Teleported Player " + str(PlayerNumber()) + " to chess board!");
+}
+
+Script "PickClass" (int class)
+{
+    if(CHESS::CheckClassFull(players[PlayerNumber()].team, class))
+        terminate;
+
+    PlaySound(ActivatorTid(), "chess_notify", CHAN_AUTO);
+    CHESS::CLASS::becomeClass(class, true);
+    CHESS::CountOneClass(players[PlayerNumber()].team, class);
+    CHESS::MAP::teleportToChessBoard();
+    SetPlayerProperty(0, 1, PROP_FROZEN);
+    SetActorVelocity(GetPlayerTid(PlayerNumber()), 0.0, 0.0, 0.0, false, false); 
+
+    if(CHESS::CheckClassFull(players[PlayerNumber()].team, class))
+        SetLineTexture(BCSUTILS::atoi(str(9) + str(players[PlayerNumber()].team) + str(class)), LINE_FRONT, TEXTURE_MIDDLE, "");
+}
+}
+} //strict namespace end

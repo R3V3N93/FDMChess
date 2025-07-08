@@ -1,0 +1,3 @@
+#library "chess"
+
+Script "PickClass" (int class) {}
