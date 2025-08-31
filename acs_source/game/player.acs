@@ -24,42 +24,50 @@ Script "ChessFrag" (int type, int arg1, int arg2) EVENT
         int killerNumber = PlayerNumber();
         int victimNumber = arg1;
 
+        if(killerNumber == victimNumber)
+            terminate;
+
         int victimPoint = CHESS::CLASS::class[players[victimNumber].class].point;
 
         if(players[killerNumber].class == CHESS::CLASS::CLASS_KING)
         {
             players[killerNumber].score += 1;
-            CHESS::game.score[players[killerNumber].team] += victimPoint;
-            ClearActorInventory(players[PlayerNumber()].tid);
             if(players[killerNumber].score <= 14)
+            {
+                ClearActorInventory(GetPlayerTid(killerNumber));
                 GiveActorInventory(GetPlayerTid(killerNumber), CHESS::CLASS::gungame[players[killerNumber].score], 1);
-
+            }
+            LogDebug(str(killerNumber) + "'s King scored\nGetting Weapon : " + CHESS::CLASS::gungame[players[killerNumber].score]);
+        }
+        else if(victimPoint == CHESS::CLASS::CONST_KING_POINT)
+        {
+            players[killerNumber].score += CHESS::CLASS::GetKingPoint(victimNumber);
         }
         else
-        {
-            if(victimPoint == CHESS::CLASS::CONST_KING_POINT)
-            {
-                players[killerNumber].score += CHESS::CLASS::GetKingPoint(victimNumber);
-                CHESS::game.score[players[killerNumber].team] += CHESS::CLASS::GetKingPoint(victimNumber);
-            }
-            else
-            {
-                players[killerNumber].score += victimPoint;
-                CHESS::game.score[players[killerNumber].team] += victimPoint;
-            }
+        {      
+            players[killerNumber].score += victimPoint;
         }
 
-        
-        
+        if(victimPoint == CHESS::CLASS::CONST_KING_POINT)
+        {
+            CHESS::game.score[players[killerNumber].team] += CHESS::CLASS::GetKingPoint(victimNumber);
+        }
+        else
+        {      
+            CHESS::game.score[players[killerNumber].team] += victimPoint;
+        } 
     }
 }
 
 script "ChessRespawn" RESPAWN
 {
     Thing_ChangeTID(0, players[PlayerNumber()].tid);
-    CHESS::CLASS::becomeClass(players[playernumber()].class);
-    CHESS::MAP::TeleportToChessBoard();
-    CHESS::MAP::ThrustThisNigFromChessBoard(PlayerNumber());
+    if(CHESS::gameState >= CHESS::GAMESTATE_OPENING)
+    {
+        CHESS::CLASS::becomeClass(players[playernumber()].class);
+        CHESS::MAP::TeleportToChessBoard();
+        CHESS::MAP::ThrustPlayerFromChessBoard(PlayerNumber());
+    }
 }
 
 function bool IsBlack()
@@ -101,13 +109,30 @@ script "Enter" ENTER
         Player_SetTeam(0, true);
     }
 
+    if(CHESS::gameState >= CHESS::GAMESTATE_OPENING)
+    {
+        LogDebug(__SCRIPT__ + " : Player " + str(PlayerNumber()) + " joined midgame. automatically assigning class.");
+        players[playernumber()].class = CHESS::GetRemainingClass();
+        CHESS::CLASS::becomeClass(players[playernumber()].class, true);
+        CHESS::MAP::TeleportToChessBoard();
+        CHESS::MAP::ThrustPlayerFromChessBoard(PlayerNumber());
+    }
+
     while(1)
     {
         switch(players[PlayerNumber()].class)
         {
             case CHESS::CLASS::CLASS_PAWN:
                 PawnSpecial();
+                break;
+            case CHESS::CLASS::CLASS_BISHOP:
+                BishopSpecial();
+                break;
         }
+        GiveInventory("Clip", 400);
+        GiveInventory("Shell", 400);
+        GiveInventory("RocketAmmo", 400);
+        GiveInventory("Cell", 400);
         delay(1);
     }
 }
@@ -122,7 +147,6 @@ script "Death" DEATH
     BCSUTILS::SetActorAlpha(ActivatorTid(), 0.0);
     PlaySound(ActivatorTid(), "chess_capture", CHAN_AUTO);
     Thing_ChangeTID(0, 0);
-    
 }
 
-}
+} 

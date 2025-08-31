@@ -7,6 +7,8 @@
 #import "lib/log.g.acs"
 
 #include "game/class/pawn.acs"
+#include "game/class/king.acs"
+#include "game/class/bishop.acs"
 
 #include "game/game.acs"
 #include "game/class.acs"
@@ -31,7 +33,7 @@ enum : fixed
 
 script "main" OPEN
 {
-    SetMusic("CHESSTB");
+    //SetMusic("CHESSTB");
     SetMusicVolume(0.1);
 
     If (GetCurrentGameMode() != "TEAMGAME")
@@ -54,13 +56,11 @@ script "main" OPEN
     SetActorPitch(2, 0.25);
 
     CHESS::setGameState(CHESS::GAMESTATE_PICKCLASS);
+    CHESS::SetTimer(CHESS::TIMER_PREP);
 
-    for(int i = CHESS::MAP::CONST_PICK_CLASS_TIME; i >= 1; i--)
+    while(CHESS::game.timer > 0)
     {
-        SetFont("BIGFONT");
-        SetHUDSize(320, 240, false);
-        HudmessageBold(s:"Pick your class! \ngame starts in " + str(i) + " seconds!"; HUDMSG_PLAIN, 1, CR_UNTRANSLATED, 160.4, 192.0, 0.0);
-        delay(35);
+        delay(1);
     }
 
     LogDebug(__SCRIPT__ + " : Starting the game thrusting players from board and giving losers remainders");
@@ -72,11 +72,11 @@ script "main" OPEN
             SetActivatorToPlayer(i);
             if(players[i].class == CHESS::CLASS::CLASS_EMPTY)
             {  
-                CHESS::CLASS::becomeClass(CHESS::GetRemainingClass());
+                CHESS::CLASS::becomeClass(CHESS::GetRemainingClass(), true);
                 CHESS::MAP::TeleportToChessBoard();
             }
-            CHESS::MAP::ThrustThisNigFromChessBoard(i);
-            SetPlayerProperty(0, 0, PROP_FROZEN);
+            CHESS::MAP::ThrustPlayerFromChessBoard(i);
+            SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
         }
     }
 
@@ -88,6 +88,7 @@ script "main" OPEN
     SetActivatorToPlayer(-1);
     LogDebug(__SCRIPT__ + " : Done!");
     CHESS::SetGameState(CHESS::GAMESTATE_OPENING);
+    CHESS::SetTimer(CHESS::TIMER_INGAME);
 
     while(1) 
     {
@@ -117,23 +118,65 @@ script "main" OPEN
             SetLineTexture(3 + team * 3, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"CALNUM", d:digit1));
         }
 
+        void TimerFormat()  // Nested function is really cool!
+        {
+            int time = CHESS::game.timer;
+
+            int minute = time / 60;
+            int second = time % 60;
+
+            int second_first = second / 10;
+            int second_second = second % 10; // second of second of second
+
+            SetLineTexture(7, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"BALNUM", d:minute));
+            SetLineTexture(8, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"BALNUM", d:second_first));
+            SetLineTexture(9, SIDE_FRONT, TEXTURE_MIDDLE, StrParam(s:"BALNUM", d:second_second));
+        }
+
         scoreIndicator(CHESS::TEAM_WHITE);
         scoreIndicator(CHESS::TEAM_BLACK);
+        TimerFormat();
 
-        if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::MAP::CONST_FRAG_POINT_LIMIT || CHESS::getScore(CHESS::TEAM_BLACK) > CHESS::MAP::CONST_FRAG_POINT_LIMIT)
+        if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::MAP::CONST_FRAG_POINT_LIMIT || CHESS::getScore(CHESS::TEAM_BLACK) > CHESS::MAP::CONST_FRAG_POINT_LIMIT || CHESS::game.timer <= 0)
             break;
+
         delay(1);
     }
     CHESS::SetGameState(CHESS::GAMESTATE_CHECKMATE);
     int winner = 123;
-    if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::MAP::CONST_FRAG_POINT_LIMIT)
+
+    CHESS::StopTimer();
+    SetMusic("");
+    
+    if(CHESS::getScore(CHESS::TEAM_WHITE) > CHESS::getScore(CHESS::TEAM_BLACK))
         winner = CHESS::TEAM_WHITE;
-    else
+    else if (CHESS::getScore(CHESS::TEAM_WHITE) < CHESS::getScore(CHESS::TEAM_BLACK))
         winner = CHESS::TEAM_BLACk;
+
     LogDebug("Team " + str(winner) + " Won");
 
+    AmbientSound("chess_game_end", 2);
+
+    SetFont("CHRESULT");
+    SetHUDSize(960, 720, false);
+    HudMessageBold(s:"A";HUDMSG_PLAIN, -1, CR_UNTRANSLATED, 480.0, 360.0, 0.0);
+
+    SetFont("CW_FONT2");
+    SetHUDSize(2880, 2160, false);
+    HudMessageBold(s:(winner == 123 ? "Stalemate" : (winner == CHESS::TEAM_WHITE ? "White Won!" : "Black Won!"));HUDMSG_PLAIN, 1, CR_UNTRANSLATED, 1440.4, 520.0, 0.0);
+    HudMessageBold(s:(winner == 123 ? "by Equal Frags" : "by Frag Limit");HUDMSG_PLAIN, 2, CR_UNTRANSLATED, 1440.4, 622.0, 0.0);
+    SetHUDSize(1440, 1080, false);
+    HudMessageBold(s:str(CHESS::getScore(CHESS::TEAM_WHITE)) + " \cjV\cuS " + str(CHESS::getScore(CHESS::TEAM_BLACK));HUDMSG_PLAIN, 3, CR_UNTRANSLATED, 720.0, 540.0, 0.0);
     Delay(35 * 5);
     ACS_NamedExecute("NextRound_Map",0);
 }
 
 } // strict namespace {}
+
+Script "EndChess" (void) NET
+{
+    CHESS::game.timer = 0;
+}
+
+script "Script_Blood" (int bloodz, int headshotalws) // blood's Z is already passed automatically
+{}

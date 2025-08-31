@@ -19,48 +19,49 @@ enum CLASS_DESCRIPTION : str
 {
     DESCRIPTION_PAWN = "
     Starts with \ckBasic Weapons\c-\n
-    You can be promoted to \ckQueen\c- by scoring \ck18 points!\c-",
+    Pawns can be promoted to \ckQueen\c- by scoring \ck18 points!\c-",
     DESCRIPTION_KNIGHT = "
     Starts with \cka Shotgun\c-\n
-    You can \ckJump\c- to cross \ckHoles and High Positions!\c-",
+    Knight can \ckJump\c- to cross \ckHoles and High Positions!\c-",
     DESCRIPTION_BISHOP = "
     Starts with \cka Sniper rifle\c-\n
-    You can \ckBecome Invisible for Short Amount of Time\c- by \ckPressing Reload Button\c-",
+    Bishop can \ckBecome Invisible for Short Amount of Time\c- by \ckPressing Jump Button\c-",
     DESCRIPTION_ROOK = "
     Starts with \ckVergil's Yamato\c-\n
-    You got \ckHigh Speed\c-!",
+    Rook has \ckHigh Speed\c-!",
     DESCRIPTION_QUEEN = "
-    Starts with \ckan Assault Rifle\c-\n
-    You are the \ckMost Powerful Being Here\c-",
+    Starts with \ckan Minigun\c-\n
+    Queens are the \ckMost Powerful Being Here\c-",
     DESCRIPTION_KING = "
     \ckGUN GAME MODE!\c-\n
-    \ckYour score gets expensive kill by kill!\c-"
+    \ckKing's score gets expensive kill by kill!\c-"
 };
 
 struct ClassT
 {
     int health;
+    fixed jump;
     fixed speed;
     // if CONST_KING_POINT(-1), it gets its own point modifier
     int point;
-    // if this is 'GUNGAME'(king's selection), this class gets gungame option
-    bool canJump;
+    
 };
 
 ClassT class[7] = 
 {
-{-1, -1.0, -1, false},
-{100, 1.0, 1, false},
-{150, 1.0, 3, true},
-{150, 1.0, 2, false},
-{175, 2.0, 4, false},
-{250, 1.0, 5, false},
-{125, 1.0, CONST_KING_POINT, false}
+{-1, 0.0, -1.0, -1},
+{100, 0.0, 1.0, 1},
+{150, 3.0, 1.0, 3},
+{150, 0.0, 1.0, 2},
+{175, 1.0, 2.5, 4},
+{250, 0.0, 1.0, 5},
+{125, 0.0, 1.0, CONST_KING_POINT}
 };
 
 struct ClassStringT
 {
     str name;
+    // if this is 'GUNGAME'(king's selection), this class gets gungame option
     str startWeapon;
     str description;
 };
@@ -92,42 +93,37 @@ int GetKingPoint(int pnum)
     return 1;
 }
 
-// UT_Enforcer????? BALPHAGORE's WORST ENEMY IN HIS LIFE EVER?????
-str gungame[15] = {"UT_Enforcer", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+str gungame[15] = {"UT_Enforcer", "USPS", "RailRifleGun", "CV47", "Model1887", "CS163D_SG_M3", "KUROJI_Sci_Shotgun", "CS163D_SG_XM1014","Raygun", "KUROJI_Sci_Chaingun", "Ranch90", "SKITTLES_BFG9000", "CobraStaff", "CS163D_MG_M249"};
 
 
 bool BecomeClass(int classnum, bool showDesc = false)
 {
-    //if(checkClassFull(classnum))
-    //{
-    //    LogWarning(__FUNCTION__ + " : Class \ck" + classString[classnum].name + "\c- is full!");
-    //    return false;
-    //}
+    int tid = players[PlayerNumber()].tid;
 
     if(showDesc)
     {
-        SetFont("BIGFONT");
-        SetHUDSize(640, 480, false);
-        HudMessage(s:("You are "+classString[classnum].name + "!\n\n" + classString[classnum].description +(classnum != CLASS::CLASS_KING ? "\n\nYou are " + str(class[classnum].point) + " scores worth" : ""));HUDMSG_FADEOUT, 2, CR_UNTRANSLATED, 320.4, 240.0, 1.0, 1.0);
+        SetFont("CW_FONT2");
+        SetHUDSize(1440, 1080, false);
+        HudMessage(s:("You are "+classString[classnum].name + "!\n" + classString[classnum].description +(classnum != CLASS::CLASS_KING ? "\nYou are " + str(class[classnum].point) + " scores worth" : ""));HUDMSG_FADEOUT, 2, CR_UNTRANSLATED, 720.4, 480.0, 10.0, 1.0);
     }
-    BCSUTILS::SetActorSpawnHealth(players[PlayerNumber()].tid, class[classnum].health);
-    BCSUTILS::SetActorHealth(players[PlayerNumber()].tid, class[classnum].health);
-    BCSUTILS::SetActorSpeed(players[PlayerNumber()].tid, class[classnum].speed);
-    ClearActorInventory(players[PlayerNumber()].tid);
+    BCSUTILS::SetActorSpawnHealth(tid, class[classnum].health);
+    BCSUTILS::SetActorHealth(tid, class[classnum].health);
+    BCSUTILS::SetActorSpeed(tid, class[classnum].speed);
+    BCSUTILS::SetActorJumpZ(tid, (fixed)class[classnum].jump * 8.0);
+    
+    ClearActorInventory(tid);
 
     players[PlayerNumber()].class = classnum;
 
-    // Lets the game know one more of this class occupied
-    // countOneClass(class); // This line should go elsewhere.
-
     if(classString[classnum].startWeapon != "GUNGAME")
-        GiveActorInventory(players[PlayerNumber()].tid, classString[classnum].startWeapon, 1);
+        GiveActorInventory(tid, classString[classnum].startWeapon, 1);
     else
-        GiveActorInventory(players[PlayerNumber()].tid, gungame[players[PlayerNumber()].score], 1);
+        GiveActorInventory(tid, gungame[players[PlayerNumber()].score], 1);
 
     SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
+    BCSUTILS::SetActorRenderStyle(tid, STYLE_Translucent);
 
-    LogDebug(__FUNCTION__ + " : set player " + str(PlayerNumber()) + "'s class as " + classString[classnum].name + "\nInformation:\n  health : " + str(class[classnum].health) + "\n  speed : " + str(class[classnum].speed) + "\n  point : " + str(class[classnum].point) + "\n  startWeapon : " + classString[classnum].startWeapon + "\n  canJump : " + str(class[classnum].canJump));
+    LogDebug(__FUNCTION__ + " : set player " + str(PlayerNumber()) + "'s class as " + classString[classnum].name + "\nInformation:\n  health : " + str(class[classnum].health) + "\n  speed : " + str(class[classnum].speed) + "\n  point : " + str(class[classnum].point) + "\n  startWeapon : " + classString[classnum].startWeapon + "\n  canJump : " + str(class[classnum].jump));
 
     return true;
 }

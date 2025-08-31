@@ -1,0 +1,21 @@
+strict namespace{
+
+void BishopSpecial()
+{
+    if(BCSUTILS::KeyDown(BT_JUMP) && CheckInventory("Boolean") == 0)
+        ACS_NamedExecuteAlways("BishopSpecial", 0, PlayerNumber());
+}
+
+script "BishopSpecial" (int pnum)
+{
+    SetActorProperty(0, APROP_Alpha, 0.1);
+    GiveInventory("Boolean", 1);
+    delay(175);
+    SetActorProperty(0, APROP_Alpha, 1.0);
+    delay(175);
+    SetFont("CW_FONT2");
+    SetHUDSize(1440, 1080, false);
+    HudMessage(s:"Ability Recharged!";HUDMSG_FADEOUT, 5, CR_UNTRANSLATED, 720.4, 540.0, 0.5, 1.0);
+    TakeInventory("Boolean", 1);
+}
+}

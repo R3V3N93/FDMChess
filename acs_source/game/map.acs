@@ -34,7 +34,7 @@ void SetSelectionValue(int team, int class, int curmax, int value)
     SetLineTexture(id * 10 + 2, LINE_FRONT, TEXTURE_MIDDLE, "CALNUM" + str(secondDigit));
 }
 
-void thrustThisNigFromChessBoard(int pnum)
+void ThrustPlayerFromChessBoard(int pnum)
 {
     PlaySound(ActivatorTid(), "chess_move", CHAN_AUTO);
     fixed playerpos[2] = {GetActorX(players[pnum].tid), GetActorY(players[pnum].tid)};
@@ -84,11 +84,26 @@ Script "PickClass" (int class)
     CHESS::CLASS::becomeClass(class, true);
     CHESS::CountOneClass(players[PlayerNumber()].team, class);
     CHESS::MAP::teleportToChessBoard();
-    SetPlayerProperty(0, 1, PROP_FROZEN);
+    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
     SetActorVelocity(GetPlayerTid(PlayerNumber()), 0.0, 0.0, 0.0, false, false); 
 
     if(CHESS::CheckClassFull(players[PlayerNumber()].team, class))
         SetLineTexture(BCSUTILS::atoi(str(9) + str(players[PlayerNumber()].team) + str(class)), LINE_FRONT, TEXTURE_MIDDLE, "");
+}
+
+script "ShowDesc" (int angle) CLIENTSIDE
+{
+    if(PlayerNumber() != ConsolePlayerNumber())
+        terminate;
+    SetFont("CW_FONT2");
+    SetHUDSize(1440, 1080, false);
+    log(s:str(angle), s:" bit shifted : ", s:str(angle >> 16));
+    if(angle < 1 || angle > 6)
+    {
+        LogError("This ShowDesc Actor doesn't have appropriate angle value");
+        terminate;
+    }
+    HudMessage(s:(CHESS::CLASS::classString[angle].name + "\n" + CHESS::CLASS::classString[angle].description);HUDMSG_PLAIN, 5, CR_UNTRANSLATED, 720.4, 480.0, 0.1);
 }
 }
 } //strict namespace end

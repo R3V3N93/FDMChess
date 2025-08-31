@@ -30,14 +30,51 @@ void SetGameState(int state)
     return;
 }
 
+enum TimerType
+{
+    TIMER_PREP = 15,
+    TIMER_INGAME = 60 * 5  
+};
+
 struct gameT
 {
     int score[2];
     int classCount[2][7];
     int classCountMax[7];
+    int timer;
+    int timerType;
 };
 
 gameT game = {{0, 0}, {{0,0,0,0,0,0,0}, {0,0,0,0,0,0,0}}, {0,16,4,4,4,2,2}};
+
+void SetTimer(int type)
+{
+    game.timerType = type;
+    game.timer = game.timerType;
+    ACS_NamedExecute("Timer", 0);
+}
+
+Script "Timer" (void)
+{
+    LogDebug(__SCRIPT__ + " : Timer Started");
+    for(;game.timer > 0;)
+    {
+        delay(35);
+        if(game.timerType == TIMER_PREP)
+        {
+            SetFont("CW_FONT2");
+            SetHUDSize(960, 720, false);
+            HudmessageBold(s:"Pick your class! \ngame starts in " + str(game.timer) + " seconds!"; HUDMSG_PLAIN, 1, CR_YELLOW, 480.4, 576.0, 0.0);
+        }
+        game.timer--;
+    }
+    LogDebug(__SCRIPT__ + " : Timer Finished");
+}
+
+void StopTimer()
+{
+    ACS_NamedTerminate("Timer", 0);
+}
 
 int GetScore(int team)
 {
