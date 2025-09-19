@@ -32,8 +32,16 @@ Script "ChessFrag" (int type, int arg1, int arg2) EVENT
         if(players[killerNumber].class == CHESS::CLASS::CLASS_KING)
         {
             players[killerNumber].score += 1;
+            //log(d:players[killerNumber].score);
             if(players[killerNumber].score <= 14)
             {
+                if(players[killerNumber].score == 14)
+                {
+                    SetFont("CW_FONT2");
+                    SetHUDSize(1440, 1080, false);
+                    HudMessage(s:"Last Weapon!";HUDMSG_FADEOUT, 5, CR_UNTRANSLATED, 720.4, 540.0, 0.5, 1.0);
+                }
+
                 ClearActorInventory(GetPlayerTid(killerNumber));
                 GiveActorInventory(GetPlayerTid(killerNumber), CHESS::CLASS::gungame[players[killerNumber].score], 1);
             }
@@ -62,11 +70,32 @@ Script "ChessFrag" (int type, int arg1, int arg2) EVENT
 script "ChessRespawn" RESPAWN
 {
     Thing_ChangeTID(0, players[PlayerNumber()].tid);
+    //log(d:players[PlayerNumber()].tid);
     if(CHESS::gameState >= CHESS::GAMESTATE_OPENING)
     {
         CHESS::CLASS::becomeClass(players[playernumber()].class);
         CHESS::MAP::TeleportToChessBoard();
         CHESS::MAP::ThrustPlayerFromChessBoard(PlayerNumber());
+    }
+    while(1)
+    {
+        switch(players[PlayerNumber()].class)
+        {
+            case CHESS::CLASS::CLASS_PAWN:
+                PawnSpecial();
+                break;
+            case CHESS::CLASS::CLASS_BISHOP:
+                BishopSpecial();
+                break;
+        }
+        GiveInventory("Clip", 400);
+        GiveInventory("Shell", 400);
+        GiveInventory("RocketAmmo", 400);
+        GiveInventory("Cell", 400);
+
+        if(CHESS::gameState == CHESS::GAMESTATE_CHECKMATE || ClassifyActor(0) == ACTOR_DEAD)
+            break;
+        delay(1);
     }
 }
 
@@ -97,6 +126,7 @@ script "Enter" ENTER
     players[PlayerNumber()].ingame = true;
     players[PlayerNumber()].tid = GetPlayerTid(PlayerNumber());
     Thing_ChangeTID(0, players[PlayerNumber()].tid);
+    LogDebug("Player " + str(PlayerNumber()) + "'s tid:\nstruct -> " + str(players[PlayerNumber()].tid) + " actual tid -> " + str(ActivatorTid()));
 
     if(IsBlack())
     {
@@ -133,8 +163,13 @@ script "Enter" ENTER
         GiveInventory("Shell", 400);
         GiveInventory("RocketAmmo", 400);
         GiveInventory("Cell", 400);
+
+        if(CHESS::gameState == CHESS::GAMESTATE_CHECKMATE || ClassifyActor(0) == ACTOR_DEAD)
+            break;
         delay(1);
     }
+
+    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
 }
 
 script "Disconnect" (int pnum) DISCONNECT

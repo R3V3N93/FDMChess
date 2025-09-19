@@ -155,6 +155,8 @@ script "main" OPEN
 
     LogDebug("Team " + str(winner) + " Won");
 
+    CHESS::SetGameState(CHESS::GAMESTATE_CHECKMATE);
+
     AmbientSound("chess_game_end", 2);
 
     SetFont("CHRESULT");
@@ -163,8 +165,8 @@ script "main" OPEN
 
     SetFont("CW_FONT2");
     SetHUDSize(2880, 2160, false);
-    HudMessageBold(s:(winner == 123 ? "Stalemate" : (winner == CHESS::TEAM_WHITE ? "White Won!" : "Black Won!"));HUDMSG_PLAIN, 1, CR_UNTRANSLATED, 1440.4, 520.0, 0.0);
-    HudMessageBold(s:(winner == 123 ? "by Equal Frags" : "by Frag Limit");HUDMSG_PLAIN, 2, CR_UNTRANSLATED, 1440.4, 622.0, 0.0);
+    HudMessageBold(s:(winner == 123 ? "Stalemate" : (winner == CHESS::TEAM_WHITE ? "\cyWhite \c-Won!" : "\cgBlack \c-Won!"));HUDMSG_PLAIN, 1, CR_UNTRANSLATED, 1440.4, 520.0, 0.0);
+    HudMessageBold(s:(winner == 123 ? "by Equal Frags" : (CHESS::game.timer == 0 ? "by Time Limit" : "by Frag Limit"));HUDMSG_PLAIN, 2, CR_UNTRANSLATED, 1440.4, 622.0, 0.0);
     SetHUDSize(1440, 1080, false);
     HudMessageBold(s:str(CHESS::getScore(CHESS::TEAM_WHITE)) + " \cjV\cuS " + str(CHESS::getScore(CHESS::TEAM_BLACK));HUDMSG_PLAIN, 3, CR_UNTRANSLATED, 720.0, 540.0, 0.0);
     Delay(35 * 5);

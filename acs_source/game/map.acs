@@ -95,15 +95,16 @@ script "ShowDesc" (int angle) CLIENTSIDE
 {
     if(PlayerNumber() != ConsolePlayerNumber())
         terminate;
-    SetFont("CW_FONT2");
-    SetHUDSize(1440, 1080, false);
-    log(s:str(angle), s:" bit shifted : ", s:str(angle >> 16));
+    
+    //log(s:str(angle), s:" bit shifted : ", s:str(angle >> 16));
     if(angle < 1 || angle > 6)
     {
         LogError("This ShowDesc Actor doesn't have appropriate angle value");
         terminate;
     }
-    HudMessage(s:(CHESS::CLASS::classString[angle].name + "\n" + CHESS::CLASS::classString[angle].description);HUDMSG_PLAIN, 5, CR_UNTRANSLATED, 720.4, 480.0, 0.1);
+    SetFont("CW_FONT2");
+    SetHUDSize(2880, 2160, false);
+    HudMessage(s:(CHESS::CLASS::classString[angle].name + "\n" + CHESS::CLASS::classString[angle].description);HUDMSG_PLAIN, 5, CR_UNTRANSLATED, 1440.4, 480.0, 0.1);
 }
 }
 } //strict namespace end

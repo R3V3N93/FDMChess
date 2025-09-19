@@ -33,7 +33,7 @@ void SetGameState(int state)
 enum TimerType
 {
     TIMER_PREP = 15,
-    TIMER_INGAME = 60 * 5  
+    TIMER_INGAME = 60 * 3  
 };
 
 struct gameT

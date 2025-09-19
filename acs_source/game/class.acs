@@ -93,7 +93,23 @@ int GetKingPoint(int pnum)
     return 1;
 }
 
-str gungame[15] = {"UT_Enforcer", "USPS", "RailRifleGun", "CV47", "Model1887", "CS163D_SG_M3", "KUROJI_Sci_Shotgun", "CS163D_SG_XM1014","Raygun", "KUROJI_Sci_Chaingun", "Ranch90", "SKITTLES_BFG9000", "CobraStaff", "CS163D_MG_M249"};
+str gungame[15] = {
+    "UT_Enforcer", 
+    "USPS", 
+    "CS163D_HG_Glock",
+    "RailRifleGun", 
+    "CV47", 
+    "Model1887", 
+    "CS163D_SG_M3", 
+    "KUROJI_Sci_Shotgun", 
+    "CS163D_SG_XM1014",
+    "Raygun", 
+    "KUROJI_Sci_Chaingun", 
+    "Ranch90", 
+    "SKITTLES_BFG9000", 
+    "CobraStaff", 
+    "CS163D_MG_M249"
+    };
 
 
 bool BecomeClass(int classnum, bool showDesc = false)
@@ -118,9 +134,9 @@ bool BecomeClass(int classnum, bool showDesc = false)
     if(classString[classnum].startWeapon != "GUNGAME")
         GiveActorInventory(tid, classString[classnum].startWeapon, 1);
     else
-        GiveActorInventory(tid, gungame[players[PlayerNumber()].score], 1);
+        GiveActorInventory(tid, (players[PlayerNumber()].score > 14 ? gungame[14] : gungame[players[PlayerNumber()].score]), 1);
 
-    SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
+    //SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
     BCSUTILS::SetActorRenderStyle(tid, STYLE_Translucent);
 
     LogDebug(__FUNCTION__ + " : set player " + str(PlayerNumber()) + "'s class as " + classString[classnum].name + "\nInformation:\n  health : " + str(class[classnum].health) + "\n  speed : " + str(class[classnum].speed) + "\n  point : " + str(class[classnum].point) + "\n  startWeapon : " + classString[classnum].startWeapon + "\n  canJump : " + str(class[classnum].jump));

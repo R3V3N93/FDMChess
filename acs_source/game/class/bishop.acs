@@ -8,14 +8,18 @@ void BishopSpecial()
 
 script "BishopSpecial" (int pnum)
 {
-    SetActorProperty(0, APROP_Alpha, 0.1);
+   
+    SetActorProperty(GetPlayerTid(pnum), APROP_Alpha, (fixed)0.1);
+    LogDebug("Player " + str(pnum) + "'s bishop is cloaking\n"+str(BCSUTILS::GetActorAlpha(GetPlayerTid(pnum))));
     GiveInventory("Boolean", 1);
-    delay(175);
-    SetActorProperty(0, APROP_Alpha, 1.0);
+    delay(35 * 8);
+    SetActorProperty(GetPlayerTid(pnum), APROP_Alpha, (fixed)1.0);
     delay(175);
     SetFont("CW_FONT2");
     SetHUDSize(1440, 1080, false);
     HudMessage(s:"Ability Recharged!";HUDMSG_FADEOUT, 5, CR_UNTRANSLATED, 720.4, 540.0, 0.5, 1.0);
+    
+    LogDebug("Player " + str(pnum) + "'s bishop is cloaking off");
     TakeInventory("Boolean", 1);
 }
 }
