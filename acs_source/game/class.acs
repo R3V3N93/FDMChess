@@ -136,7 +136,7 @@ bool BecomeClass(int classnum, bool showDesc = false)
     else
         GiveActorInventory(tid, (players[PlayerNumber()].score > 14 ? gungame[14] : gungame[players[PlayerNumber()].score]), 1);
 
-    //SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
+    SetPlayerSkin(PlayerNumber(), (players[PlayerNumber()].team == CHESS::TEAM_BLACK ? "Black" : "White") + CHESS::CLASS::classString[players[PlayerNumber()].class].name, true);
     BCSUTILS::SetActorRenderStyle(tid, STYLE_Translucent);
 
     LogDebug(__FUNCTION__ + " : set player " + str(PlayerNumber()) + "'s class as " + classString[classnum].name + "\nInformation:\n  health : " + str(class[classnum].health) + "\n  speed : " + str(class[classnum].speed) + "\n  point : " + str(class[classnum].point) + "\n  startWeapon : " + classString[classnum].startWeapon + "\n  canJump : " + str(class[classnum].jump));
